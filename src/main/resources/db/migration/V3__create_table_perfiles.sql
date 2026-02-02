@@ -1,0 +1,5 @@
+CREATE TABLE perfiles (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(50) NOT NULL UNIQUE,
+    PRIMARY KEY (id)
+);
