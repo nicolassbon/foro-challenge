@@ -1,3 +1,18 @@
 spring:
   application:
     name: foro-hub
+  datasource:
+    url: jdbc:mysql://localhost:3306/${DB_NAME:forohub}
+    username: ${DB_USERNAME:forohub_user}
+    password: ${DB_PASSWORD:forohub_pass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    show-sql: true
+    properties:
+      hibernate.format_sql: true
+
+api:
+  security:
+    token:
+      secret: ${API_SECURITY_TOKEN_SECRET:default_jwt_secret_key}
+      expiration-ms: ${API_SECURITY_TOKEN_EXPIRATION:3600000} # 1 hour
