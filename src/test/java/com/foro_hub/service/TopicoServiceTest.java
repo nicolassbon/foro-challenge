@@ -32,7 +32,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Tests para TopicoService")
@@ -208,7 +208,7 @@ class TopicoServiceTest {
         final Page<Topico> pageTopicos = new PageImpl<>(topicos);
         final Pageable pageable = PageRequest.of(0, 10);
 
-        when(topicoRepository.findAll(pageable)).thenReturn(pageTopicos);
+        when(topicoRepository.findByActivoTrue(pageable)).thenReturn(pageTopicos);
 
         // When
         final Page<TopicoResponseDTO> response = topicoService.listarTopicos(pageable);
@@ -233,6 +233,49 @@ class TopicoServiceTest {
         // Then
         assertNotNull(response);
         assertEquals(1L, response.id());
+    }
+
+    @Test
+    @DisplayName("Actualizar tópico con título duplicado debería lanzar DuplicateTopicoException")
+    void actualizarTopico_conTituloDuplicado_deberiaLanzarDuplicateTopicoException() {
+        // Given
+        TopicoUpdateDTO dtoConDuplicado = TopicoUpdateDTO.builder()
+                .withTitulo("Titulo Ya Existente")
+                .withMensaje("Mensaje nuevo")
+                .withStatus(StatusTopico.ABIERTO)
+                .build();
+
+        when(topicoRepository.findById(1L)).thenReturn(Optional.of(topico));
+
+        when(topicoRepository.existsByTituloAndMensaje(dtoConDuplicado.titulo(), dtoConDuplicado.mensaje()))
+                .thenReturn(true);
+
+        // When & Then
+        assertThrows(DuplicateTopicoException.class,
+                () -> topicoService.actualizarTopico(1L, dtoConDuplicado));
+
+        verify(topicoRepository, never()).save(any(Topico.class));
+    }
+
+    @Test
+    @DisplayName("Actualizar tópico con mismos datos no debería llamar a validación de duplicados")
+    void actualizarTopico_conMismosDatos_noDeberiaValidarDuplicados() {
+        // Given
+        TopicoUpdateDTO dtoSinCambios = TopicoUpdateDTO.builder()
+                .withTitulo("¿Cómo aprender Spring Boot?")
+                .withMensaje("Necesito recursos para aprender Spring Boot desde cero")
+                .withStatus(StatusTopico.CERRADO)
+                .build();
+
+        when(topicoRepository.findById(1L)).thenReturn(Optional.of(topico));
+        when(topicoRepository.save(any(Topico.class))).thenReturn(topico);
+
+        // When
+        topicoService.actualizarTopico(1L, dtoSinCambios);
+
+        // Then
+        verify(topicoRepository).save(any(Topico.class));
+        verify(topicoRepository, never()).existsByTituloAndMensaje(anyString(), anyString());
     }
 
     @Test
