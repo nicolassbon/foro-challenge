@@ -32,6 +32,7 @@ public class TopicoMapper {
                 .withTitulo(topico.getTitulo())
                 .withMensaje(topico.getMensaje())
                 .withFechaCreacion(topico.getFechaCreacion())
+                .withStatus(topico.getStatus())
                 .build();
     }
 

@@ -35,7 +35,7 @@ public class CursoService {
     public CursoResponseDTO obtenerCursoPorId(Long id) {
         log.info("Buscando curso con id: {}", id);
 
-        final Curso curso = cursoRepository.findById(id)
+        final Curso curso = cursoRepository.findByIdAndActivoTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el curso con ID: " + id));
 
         return CursoMapper.toResponseDTO(curso);
@@ -52,7 +52,7 @@ public class CursoService {
     public CursoResponseDTO actualizarCurso(final Long id, final CursoUpdateDTO updateDTO) {
         log.info("Actualizando curso con id: {}", id);
 
-        final Curso curso = cursoRepository.findById(id)
+        final Curso curso = cursoRepository.findByIdAndActivoTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el curso con ID: " + id));
 
         CursoMapper.updateEntityFromDTO(curso, updateDTO);
@@ -65,7 +65,7 @@ public class CursoService {
     public void eliminarCurso(final Long id) {
         log.info("Eliminando curso con id: {}", id);
 
-        final Curso curso = cursoRepository.findById(id)
+        final Curso curso = cursoRepository.findByIdAndActivoTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el curso con ID: " + id));
 
         curso.setActivo(false);

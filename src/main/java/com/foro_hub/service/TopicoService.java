@@ -12,6 +12,7 @@ import com.foro_hub.mapper.TopicoMapper;
 import com.foro_hub.repository.CursoRepository;
 import com.foro_hub.repository.TopicoRepository;
 import com.foro_hub.repository.UsuarioRepository;
+import com.foro_hub.util.AuthenticationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -26,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class TopicoService {
 
     private final TopicoRepository topicoRepository;
-    private final UsuarioRepository usuarioRepository;
     private final CursoRepository cursoRepository;
 
     public TopicoResponseDTO crearTopico(final TopicoCreateDTO createDTO) {
@@ -34,10 +34,10 @@ public class TopicoService {
 
         validarTopicoDuplicado(createDTO.titulo(), createDTO.mensaje());
 
-        final Usuario autor = usuarioRepository.findById(createDTO.idAutor())
-                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario con ID: " + createDTO.idAutor()));
+        final Usuario autor = AuthenticationUtils.getAuthenticatedUser();
+        log.info("Autor del topico obtenido del contexto de seguridad: {}", autor.getEmail());
 
-        final Curso curso = cursoRepository.findById(createDTO.idCurso())
+        final Curso curso = cursoRepository.findByIdAndActivoTrue(createDTO.idCurso())
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el curso con ID: " + createDTO.idCurso()));
 
         final Topico topicoGuardado = topicoRepository.save(TopicoMapper.toEntity(createDTO, autor, curso));
@@ -51,7 +51,7 @@ public class TopicoService {
     public TopicoResponseDTO obtenerTopicoPorId(final Long id) {
         log.info("Obteniendo Topico con ID: {}", id);
 
-        final Topico topico = topicoRepository.findById(id)
+        final Topico topico = topicoRepository.findByIdAndActivoTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el tópico con ID: " + id));
 
         return TopicoMapper.toResponseDTO(topico);
@@ -70,7 +70,7 @@ public class TopicoService {
     public TopicoResponseDTO actualizarTopico(final Long id, final TopicoUpdateDTO dto) {
         log.info("Actualizando Topico con ID: {}", id);
 
-        final Topico topico = topicoRepository.findById(id)
+        final Topico topico = topicoRepository.findByIdAndActivoTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el tópico con ID: " + id));
 
         if (!topico.getTitulo().equals(dto.titulo()) || !topico.getMensaje().equals(dto.mensaje())) {
@@ -89,7 +89,7 @@ public class TopicoService {
     public void eliminarTopico(final Long id) {
         log.info("Eliminando Topico con ID: {}", id);
 
-        final Topico topico = topicoRepository.findById(id)
+        final Topico topico = topicoRepository.findByIdAndActivoTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el tópico con ID: " + id));
 
         topico.setActivo(false);
