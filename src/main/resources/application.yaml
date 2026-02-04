@@ -14,5 +14,11 @@ spring:
 api:
   security:
     token:
-      secret: ${API_SECURITY_TOKEN_SECRET:default_jwt_secret_key}
+      secret: ${API_SECURITY_TOKEN_SECRET:forohub_jwt_secret_key_min_256_bits_required_for_security}
       expiration-ms: ${API_SECURITY_TOKEN_EXPIRATION:3600000} # 1 hour
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
