@@ -79,7 +79,7 @@ class CursoServiceTest {
     @DisplayName("Obtener curso por ID con ID existente debería retornar CursoResponseDTO")
     void obtenerCursoPorId_conIdExistente_deberiaRetornarCursoResponseDTO() {
         // Given
-        when(cursoRepository.findById(1L)).thenReturn(Optional.of(curso));
+        when(cursoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(curso));
 
         // When
         final CursoResponseDTO response = cursoService.obtenerCursoPorId(1L);
@@ -95,7 +95,7 @@ class CursoServiceTest {
     @DisplayName("Obtener curso por ID con ID inexistente debería lanzar ResourceNotFoundException")
     void obtenerCursoPorId_conIdInexistente_deberiaLanzarResourceNotFoundException() {
         // Given
-        when(cursoRepository.findById(999L)).thenReturn(Optional.empty());
+        when(cursoRepository.findByIdAndActivoTrue(999L)).thenReturn(Optional.empty());
 
         // When & Then
         final ResourceNotFoundException exception = assertThrows(
@@ -130,7 +130,7 @@ class CursoServiceTest {
     @DisplayName("Actualizar curso con datos válidos debería actualizar y retornar CursoResponseDTO")
     void actualizarCurso_conDatosValidos_deberiaActualizarYRetornarCursoResponseDTO() {
         // Given
-        when(cursoRepository.findById(1L)).thenReturn(Optional.of(curso));
+        when(cursoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(curso));
         when(cursoRepository.save(any(Curso.class))).thenReturn(curso);
 
         // When
@@ -145,7 +145,7 @@ class CursoServiceTest {
     @DisplayName("Actualizar curso con ID inexistente debería lanzar ResourceNotFoundException")
     void actualizarCurso_conIdInexistente_deberiaLanzarResourceNotFoundException() {
         // Given
-        when(cursoRepository.findById(999L)).thenReturn(Optional.empty());
+        when(cursoRepository.findByIdAndActivoTrue(999L)).thenReturn(Optional.empty());
 
         // When & Then
         final ResourceNotFoundException exception = assertThrows(
@@ -160,7 +160,7 @@ class CursoServiceTest {
     @DisplayName("Eliminar curso con ID existente debería marcar como inactivo")
     void eliminarCurso_conIdExistente_deberiaMarcarComoInactivo() {
         // Given
-        when(cursoRepository.findById(1L)).thenReturn(Optional.of(curso));
+        when(cursoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(curso));
         when(cursoRepository.save(any(Curso.class))).thenReturn(curso);
 
         // When
@@ -174,7 +174,7 @@ class CursoServiceTest {
     @DisplayName("Eliminar curso con ID inexistente debería lanzar ResourceNotFoundException")
     void eliminarCurso_conIdInexistente_deberiaLanzarResourceNotFoundException() {
         // Given
-        when(cursoRepository.findById(999L)).thenReturn(Optional.empty());
+        when(cursoRepository.findByIdAndActivoTrue(999L)).thenReturn(Optional.empty());
 
         // When & Then
         final ResourceNotFoundException exception = assertThrows(
@@ -202,7 +202,7 @@ class CursoServiceTest {
     @DisplayName("Actualizar curso debería guardar los cambios en el repositorio")
     void actualizarCurso_deberiaGuardarCambiosEnRepositorio() {
         // Given
-        when(cursoRepository.findById(1L)).thenReturn(Optional.of(curso));
+        when(cursoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(curso));
         when(cursoRepository.save(any(Curso.class))).thenReturn(curso);
 
         // When
@@ -216,7 +216,7 @@ class CursoServiceTest {
     @DisplayName("Eliminar curso debería guardar el estado inactivo en el repositorio")
     void eliminarCurso_deberiaGuardarEstadoInactivoEnRepositorio() {
         // Given
-        when(cursoRepository.findById(1L)).thenReturn(Optional.of(curso));
+        when(cursoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(curso));
         when(cursoRepository.save(any(Curso.class))).thenReturn(curso);
 
         // When

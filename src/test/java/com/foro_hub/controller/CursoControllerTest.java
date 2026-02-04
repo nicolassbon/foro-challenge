@@ -3,6 +3,7 @@ package com.foro_hub.controller;
 import com.foro_hub.dto.curso.CursoCreateDTO;
 import com.foro_hub.dto.curso.CursoResponseDTO;
 import com.foro_hub.dto.curso.CursoUpdateDTO;
+import com.foro_hub.security.JwtService;
 import com.foro_hub.service.CursoService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -50,6 +51,10 @@ class CursoControllerTest {
 
     @MockitoBean
     private CursoService cursoService;
+
+    // Mocking JwtService to bypass security filters
+    @MockitoBean
+    private JwtService jwtService;
 
     private CursoResponseDTO cursoResponse;
 

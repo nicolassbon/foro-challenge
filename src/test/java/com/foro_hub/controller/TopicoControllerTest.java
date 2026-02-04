@@ -4,6 +4,7 @@ import com.foro_hub.domain.enums.StatusTopico;
 import com.foro_hub.dto.topico.TopicoCreateDTO;
 import com.foro_hub.dto.topico.TopicoResponseDTO;
 import com.foro_hub.dto.topico.TopicoUpdateDTO;
+import com.foro_hub.security.JwtService;
 import com.foro_hub.service.TopicoService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,6 +54,11 @@ class TopicoControllerTest {
     @MockitoBean
     private TopicoService topicoService;
 
+    // Mocking JwtService to bypass security filters
+    @MockitoBean
+    private JwtService jwtService;
+
+
     private TopicoResponseDTO topicoResponse;
 
     @BeforeEach
@@ -61,6 +67,7 @@ class TopicoControllerTest {
                 .withId(1L)
                 .withTitulo("Titulo Demo")
                 .withMensaje("Mensaje Demo")
+                .withStatus(StatusTopico.ABIERTO)
                 .withFechaCreacion(LocalDateTime.now())
                 .build();
     }
@@ -69,7 +76,7 @@ class TopicoControllerTest {
     @DisplayName("POST /topicos - Debería retornar 201 Created, Header Location y Body correcto")
     void crearTopico_DeberiaRetornar201() throws Exception {
         // GIVEN
-        TopicoCreateDTO requestDto = new TopicoCreateDTO("Titulo Demo", "Mensaje Demo", 1L, 2L);
+        TopicoCreateDTO requestDto = new TopicoCreateDTO("Titulo Demo", "Mensaje Demo", 1L);
         given(topicoService.crearTopico(any())).willReturn(topicoResponse);
 
         // WHEN
@@ -89,7 +96,7 @@ class TopicoControllerTest {
     @DisplayName("POST /topicos - Debería retornar 400 Bad Request si falta el título")
     void crearTopico_ConTituloNulo_Retorna400() throws Exception {
         // GIVEN
-        TopicoCreateDTO invalidDto = new TopicoCreateDTO(null, "Mensaje Demo", 1L, 2L);
+        TopicoCreateDTO invalidDto = new TopicoCreateDTO(null, "Mensaje Demo", 1L);
 
         // WHEN
         MockHttpServletResponse response = mockMvc.perform(post("/topicos")
@@ -105,7 +112,7 @@ class TopicoControllerTest {
     @DisplayName("POST /topicos - Debería retornar 400 Bad Request si falta el mensaje")
     void crearTopico_ConMensajeNulo_Retorna400() throws Exception {
         // GIVEN
-        TopicoCreateDTO invalidDto = new TopicoCreateDTO("Titulo Demo", null, 1L, 2L);
+        TopicoCreateDTO invalidDto = new TopicoCreateDTO("Titulo Demo", null, 1L);
 
         // WHEN & THEN
         mockMvc.perform(post("/topicos")
@@ -118,7 +125,7 @@ class TopicoControllerTest {
     @DisplayName("POST /topicos - Debería retornar 400 Bad Request si campos están vacíos")
     void crearTopico_ConCamposVacios_Retorna400() throws Exception {
         // GIVEN
-        TopicoCreateDTO invalidDto = new TopicoCreateDTO("", "", 1L, 2L);
+        TopicoCreateDTO invalidDto = new TopicoCreateDTO("", "", 1L);
 
         // WHEN & THEN
         mockMvc.perform(post("/topicos")
@@ -178,6 +185,7 @@ class TopicoControllerTest {
                 .withId(1L)
                 .withTitulo("Titulo Demo - Actualizado")
                 .withMensaje("Mensaje Demo - Actualizado")
+                .withStatus(StatusTopico.CERRADO)
                 .withFechaCreacion(LocalDateTime.now())
                 .build();
 

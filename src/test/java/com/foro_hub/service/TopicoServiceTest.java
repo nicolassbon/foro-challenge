@@ -11,10 +11,7 @@ import com.foro_hub.exception.DuplicateTopicoException;
 import com.foro_hub.exception.ResourceNotFoundException;
 import com.foro_hub.repository.CursoRepository;
 import com.foro_hub.repository.TopicoRepository;
-import com.foro_hub.repository.UsuarioRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -23,6 +20,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -42,9 +43,6 @@ class TopicoServiceTest {
     private TopicoRepository topicoRepository;
 
     @Mock
-    private UsuarioRepository usuarioRepository;
-
-    @Mock
     private CursoRepository cursoRepository;
 
     @InjectMocks
@@ -58,11 +56,9 @@ class TopicoServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Given - preparar datos de prueba
         topicoCreateDTO = TopicoCreateDTO.builder()
                 .withTitulo("¿Cómo aprender Spring Boot?")
                 .withMensaje("Necesito recursos para aprender Spring Boot desde cero")
-                .withIdAutor(1L)
                 .withIdCurso(1L)
                 .build();
 
@@ -100,13 +96,24 @@ class TopicoServiceTest {
                 .build();
     }
 
+    private void setupSecurityContext() {
+        final Authentication authentication = new UsernamePasswordAuthenticationToken(
+                usuario,
+                null,
+                usuario.getAuthorities()
+        );
+        final SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+    }
+
     @Test
     @DisplayName("Crear tópico con datos válidos debería crear y retornar TopicoResponseDTO")
     void crearTopico_conDatosValidos_deberiaCrearYRetornarTopicoResponseDTO() {
         // Given
+        setupSecurityContext();
         when(topicoRepository.existsByTituloAndMensaje(anyString(), anyString())).thenReturn(false);
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(cursoRepository.findById(1L)).thenReturn(Optional.of(curso));
+        when(cursoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(curso));
         when(topicoRepository.save(any(Topico.class))).thenReturn(topico);
 
         // When
@@ -117,6 +124,7 @@ class TopicoServiceTest {
         assertEquals(1L, response.id());
         assertEquals("¿Cómo aprender Spring Boot?", response.titulo());
         assertEquals("Necesito recursos para aprender Spring Boot desde cero", response.mensaje());
+        assertEquals(StatusTopico.ABIERTO, response.status());
         assertNotNull(response.fechaCreacion());
     }
 
@@ -136,28 +144,12 @@ class TopicoServiceTest {
     }
 
     @Test
-    @DisplayName("Crear tópico con autor inexistente debería lanzar ResourceNotFoundException")
-    void crearTopico_conAutorInexistente_deberiaLanzarResourceNotFoundException() {
-        // Given
-        when(topicoRepository.existsByTituloAndMensaje(anyString(), anyString())).thenReturn(false);
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.empty());
-
-        // When & Then
-        final ResourceNotFoundException exception = assertThrows(
-                ResourceNotFoundException.class,
-                () -> topicoService.crearTopico(topicoCreateDTO)
-        );
-
-        assertTrue(exception.getMessage().contains("No se encontró el usuario con ID: 1"));
-    }
-
-    @Test
     @DisplayName("Crear tópico con curso inexistente debería lanzar ResourceNotFoundException")
     void crearTopico_conCursoInexistente_deberiaLanzarResourceNotFoundException() {
         // Given
+        setupSecurityContext();
         when(topicoRepository.existsByTituloAndMensaje(anyString(), anyString())).thenReturn(false);
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(cursoRepository.findById(1L)).thenReturn(Optional.empty());
+        when(cursoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.empty());
 
         // When & Then
         final ResourceNotFoundException exception = assertThrows(
@@ -172,7 +164,7 @@ class TopicoServiceTest {
     @DisplayName("Obtener tópico por ID con ID existente debería retornar TopicoResponseDTO")
     void obtenerTopicoPorId_conIdExistente_deberiaRetornarTopicoResponseDTO() {
         // Given
-        when(topicoRepository.findById(1L)).thenReturn(Optional.of(topico));
+        when(topicoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(topico));
 
         // When
         final TopicoResponseDTO response = topicoService.obtenerTopicoPorId(1L);
@@ -182,6 +174,7 @@ class TopicoServiceTest {
         assertEquals(1L, response.id());
         assertEquals("¿Cómo aprender Spring Boot?", response.titulo());
         assertEquals("Necesito recursos para aprender Spring Boot desde cero", response.mensaje());
+        assertEquals(StatusTopico.ABIERTO, response.status());
         assertNotNull(response.fechaCreacion());
     }
 
@@ -189,7 +182,7 @@ class TopicoServiceTest {
     @DisplayName("Obtener tópico por ID con ID inexistente debería lanzar ResourceNotFoundException")
     void obtenerTopicoPorId_conIdInexistente_deberiaLanzarResourceNotFoundException() {
         // Given
-        when(topicoRepository.findById(999L)).thenReturn(Optional.empty());
+        when(topicoRepository.findByIdAndActivoTrue(999L)).thenReturn(Optional.empty());
 
         // When & Then
         final ResourceNotFoundException exception = assertThrows(
@@ -224,8 +217,12 @@ class TopicoServiceTest {
     @DisplayName("Actualizar tópico con datos válidos debería actualizar y retornar TopicoResponseDTO")
     void actualizarTopico_conDatosValidos_deberiaActualizarYRetornarTopicoResponseDTO() {
         // Given
-        when(topicoRepository.findById(1L)).thenReturn(Optional.of(topico));
-        when(topicoRepository.save(any(Topico.class))).thenReturn(topico);
+        when(topicoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(topico));
+        when(topicoRepository.save(any(Topico.class))).thenAnswer(invocation -> {
+            Topico topicoActualizado = invocation.getArgument(0);
+            topicoActualizado.setStatus(StatusTopico.CERRADO);
+            return topicoActualizado;
+        });
 
         // When
         final TopicoResponseDTO response = topicoService.actualizarTopico(1L, topicoUpdateDTO);
@@ -233,6 +230,7 @@ class TopicoServiceTest {
         // Then
         assertNotNull(response);
         assertEquals(1L, response.id());
+        assertEquals(StatusTopico.CERRADO, response.status());
     }
 
     @Test
@@ -245,7 +243,7 @@ class TopicoServiceTest {
                 .withStatus(StatusTopico.ABIERTO)
                 .build();
 
-        when(topicoRepository.findById(1L)).thenReturn(Optional.of(topico));
+        when(topicoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(topico));
 
         when(topicoRepository.existsByTituloAndMensaje(dtoConDuplicado.titulo(), dtoConDuplicado.mensaje()))
                 .thenReturn(true);
@@ -267,7 +265,7 @@ class TopicoServiceTest {
                 .withStatus(StatusTopico.CERRADO)
                 .build();
 
-        when(topicoRepository.findById(1L)).thenReturn(Optional.of(topico));
+        when(topicoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(topico));
         when(topicoRepository.save(any(Topico.class))).thenReturn(topico);
 
         // When
@@ -282,7 +280,7 @@ class TopicoServiceTest {
     @DisplayName("Actualizar tópico con ID inexistente debería lanzar ResourceNotFoundException")
     void actualizarTopico_conIdInexistente_deberiaLanzarResourceNotFoundException() {
         // Given
-        when(topicoRepository.findById(999L)).thenReturn(Optional.empty());
+        when(topicoRepository.findByIdAndActivoTrue(999L)).thenReturn(Optional.empty());
 
         // When & Then
         final ResourceNotFoundException exception = assertThrows(
@@ -297,7 +295,7 @@ class TopicoServiceTest {
     @DisplayName("Eliminar tópico con ID existente debería marcar como inactivo")
     void eliminarTopico_conIdExistente_deberiaMarcarComoInactivo() {
         // Given
-        when(topicoRepository.findById(1L)).thenReturn(Optional.of(topico));
+        when(topicoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(topico));
         when(topicoRepository.save(any(Topico.class))).thenReturn(topico);
 
         // When
@@ -311,7 +309,7 @@ class TopicoServiceTest {
     @DisplayName("Eliminar tópico con ID inexistente debería lanzar ResourceNotFoundException")
     void eliminarTopico_conIdInexistente_deberiaLanzarResourceNotFoundException() {
         // Given
-        when(topicoRepository.findById(999L)).thenReturn(Optional.empty());
+        when(topicoRepository.findByIdAndActivoTrue(999L)).thenReturn(Optional.empty());
 
         // When & Then
         final ResourceNotFoundException exception = assertThrows(
