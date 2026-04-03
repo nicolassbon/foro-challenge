@@ -41,7 +41,7 @@ Foro Hub es una API REST que replica el funcionamiento de un foro educativo, per
 ### Prerequisitos
 
 - Java 17 o superior
-- MySQL 8.0 o superior
+- Docker + Docker Compose plugin (`docker compose`) o MySQL 8.0 local
 - Maven 3.6+ (o usar el wrapper incluido `./mvnw`)
 
 ### Configuración
@@ -52,14 +52,7 @@ Foro Hub es una API REST que replica el funcionamiento de un foro educativo, per
    cd foro-challenge
    ```
 
-2. **Configurar la base de datos**
-   
-   Crear una base de datos MySQL:
-   ```sql
-   CREATE DATABASE forohub;
-   ```
-
-3. **Configurar variables de entorno** (recomendado)
+2. **Configurar variables de entorno** (recomendado)
    
    Copiar el archivo de ejemplo y ajustar los valores:
    ```bash
@@ -68,19 +61,35 @@ Foro Hub es una API REST que replica el funcionamiento de un foro educativo, per
    
    Editar `.env` con tus credenciales:
    ```env
-   DB_NAME=forohub
-   DB_USERNAME=forohub_user
-   DB_PASSWORD=forohub_pass
-   API_SECURITY_TOKEN_SECRET=tu_secret_seguro_aqui
-   API_SECURITY_TOKEN_EXPIRATION=3600000
-   ```
+    DB_NAME=forohub
+    DB_HOST=localhost
+    DB_USERNAME=forohub_user
+    DB_PASSWORD=forohub_pass
+    API_SECURITY_TOKEN_SECRET=tu_secret_seguro_aqui
+    API_SECURITY_TOKEN_EXPIRATION=3600000
+    ```
    
    **Nota:** Genera un secret seguro con: `openssl rand -base64 64`
 
+3. **Levantar MySQL**
+
+   Tenés dos opciones:
+
+   - **Con Docker Compose**
+     ```bash
+     docker compose up -d mysql
+     ```
+
+   - **Con MySQL local**
+     Crear una base de datos MySQL:
+     ```sql
+     CREATE DATABASE forohub;
+     ```
+
 4. **Compilar el proyecto**
-   ```bash
-   ./mvnw clean install
-   ```
+    ```bash
+    ./mvnw clean install
+    ```
 
 5. **Ejecutar la aplicación**
    ```bash
@@ -88,6 +97,54 @@ Foro Hub es una API REST que replica el funcionamiento de un foro educativo, per
    ```
 
 La aplicación estará disponible en `http://localhost:8080`
+
+## Docker
+
+### Opción 1: App local + MySQL en Docker
+
+1. Crear el archivo de variables:
+   ```bash
+   cp .env.example .env
+   ```
+2. Levantar solo MySQL:
+   ```bash
+   docker compose up -d mysql
+   ```
+3. Ejecutar la app localmente:
+   ```bash
+   ./mvnw spring-boot:run
+   ```
+
+La app usa `DB_HOST=localhost` por defecto, así que este flujo sigue funcionando sin cambios extra.
+
+### Opción 2: App + MySQL en Docker Compose
+
+1. Crear el archivo de variables:
+   ```bash
+   cp .env.example .env
+   ```
+2. Levantar todo el stack:
+   ```bash
+   docker compose up --build
+   ```
+3. Para dejarlo en segundo plano:
+   ```bash
+   docker compose up --build -d
+   ```
+4. Para bajar los servicios:
+   ```bash
+   docker compose down
+   ```
+
+En esta configuración con Docker Compose, `DB_HOST` se define automáticamente dentro del servicio `app` para apuntar al servicio de MySQL en la red interna de Compose. Esto es necesario porque, dentro de un contenedor, `localhost` referencia al mismo contenedor de la app y no a la base de datos. No es un parche temporal, sino la forma esperada de comunicación entre servicios definidos en `compose.yml`.
+
+Si el primer arranque desde cero demora mucho por la inicialización de MySQL, corré una segunda vez:
+
+```bash
+docker compose up -d
+```
+
+Con eso ya se verificó que la app termina levantando y responde en `http://localhost:8080`.
 
 ## Documentación API (Swagger)
 
@@ -152,33 +209,6 @@ Ejecutar los tests:
 - **Contraseñas**: Encriptadas con BCrypt
 - **Tokens**: Expiran en 1 hora (configurable)
 
-## Docker (Opcional)
-
-Si prefieres usar Docker para MySQL:
-
-1. **Asegúrate de tener el archivo `.env` configurado**
-   ```bash
-   cp .env.example .env
-   # Edita el .env con tus valores
-   ```
-
-2. **Levantar MySQL con Docker**
-   ```bash
-   docker-compose up -d
-   ```
-
-3. **Verificar que MySQL esté corriendo**
-   ```bash
-   docker-compose ps
-   ```
-
-4. **Detener MySQL**
-   ```bash
-   docker-compose down
-   ```
-
-Esto levantará MySQL automáticamente con la configuración del `.env`
-
 ## Validaciones de Negocio
 
 - No se permiten tópicos duplicados (mismo título y mensaje)
@@ -203,7 +233,11 @@ Parámetros:
 
 ### Error de conexión a MySQL
 - Verificar que MySQL esté corriendo
-- Verificar credenciales en `application.yaml` o variables de entorno
+- Verificar credenciales y `DB_HOST` en variables de entorno
+
+### Error al iniciar con Docker Compose
+- Verificar que exista `.env` con `MYSQL_*`, `DB_*` y `API_SECURITY_TOKEN_SECRET`
+- Revisar el estado de salud de MySQL con `docker compose ps`
 
 ### Error 401 Unauthorized
 - Verificar que el token JWT sea válido y no haya expirado

@@ -2,7 +2,7 @@ spring:
   application:
     name: foro-hub
   datasource:
-    url: jdbc:mysql://localhost:3306/${DB_NAME:forohub}
+    url: jdbc:mysql://${DB_HOST:localhost}:3306/${DB_NAME:forohub}
     username: ${DB_USERNAME:forohub_user}
     password: ${DB_PASSWORD:forohub_pass}
     driver-class-name: com.mysql.cj.jdbc.Driver
